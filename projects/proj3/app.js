@@ -6,7 +6,11 @@ import * as dat from '../../libs/dat.gui.module.js';
 import * as CUBE from '../../libs/objects/cube.js';
 import * as SPHERE from '../../libs/objects/sphere.js';
 
-import * as STACK from '../../libs/stack.js';
+import {modelView, loadIdentity, loadMatrix, pushMatrix, popMatrix, multMatrix, multTranslation, multScale, multRotationX, multRotationY, multRotationZ} from '../../libs/stack.js';
+
+import scene from './scene.js';
+
+const FLOOR_COLOR = vec4(0.5, 0.5, 0.5, 1.0);
 
 function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
@@ -177,6 +181,36 @@ function setup(shaders) {
         gl.viewport(0,0,canvas.width, canvas.height);
     }
 
+    function uploadModelView() {
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
+    }
+
+    function drawFloor() {
+        multScale([2,-0.2,2]);
+        uploadModelView();
+        CUBE.draw(gl, program, gl.TRIANGLES);
+    }
+
+    function drawObjects(obj) {
+        pushMatrix();
+        obj.scale ?? multScale(obj.scale);
+        obj.translation?? multTranslation(obj.translation);
+        obj.rotationX ?? multRotationX(obj.rotationX);
+        obj.rotationY ?? multRotationY(obj.rotationY);
+        obj.rotationZ ?? multRotationZ(obj.rotationZ);
+
+        uploadModelView();
+        if (obj.mode === "TRIANGLES") {
+            obj.shape.draw(gl, program, gl.TRIANGLES);
+        }
+
+        for (const child of obj.children) {
+            drawObjects(child);
+        }
+
+        popMatrix();
+    }
+
     function render(time)
     {
         window.requestAnimationFrame(render);
@@ -186,20 +220,27 @@ function setup(shaders) {
         gl.useProgram(program);
 
         mView = lookAt(camera.eye, camera.at, camera.up);
-        STACK.loadMatrix(mView);
+        loadMatrix(mView);
 
         mProjection = perspective(camera.fovy, camera.aspect, camera.near, camera.far);
 
-
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(STACK.modelView()));
+        
+        //multScale(2,-0.2,2);
+        
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(STACK.modelView())));
-
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(modelView())));
+        
         gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
 
-        SPHERE.draw(gl, program, options.wireframe ? gl.LINES : gl.TRIANGLES);
-        CUBE.draw(gl, program, gl.LINES);
+        
+        drawObjects(scene);
     }
+
+    
+
+
+
 }
 
 const urls = ['shader.vert', 'shader.frag'];
