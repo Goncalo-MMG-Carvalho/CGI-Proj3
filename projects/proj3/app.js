@@ -124,8 +124,8 @@ function setup(shaders) {
     let activeObject = "1";
 
     // Light settings
-    let lights = {
-        light1: {
+    let lights = [
+        { // light1
             position: { x: 3, y: 0, z: 0, w: 1},
             ambient: [255, 255, 255],
             diffuse: [255, 255, 255],
@@ -134,7 +134,7 @@ function setup(shaders) {
             active: true,
         },
 
-        light2: {
+        { // light2
             position: { x: 0, y: 3, z: 0, w: 0},
             ambient: [255, 255, 255],
             diffuse: [255, 255, 255],
@@ -143,7 +143,7 @@ function setup(shaders) {
             active: false,
         },
 
-        light3: {
+        { // light3
             position: { x: 0, y: 0, z: 3, w: 0},
             ambient: [255, 255, 255],
             diffuse: [255, 255, 255],
@@ -151,7 +151,7 @@ function setup(shaders) {
             directional: false,
             active: false,
         },
-    }
+    ];
 
     //
     // CONTROLS GUI
@@ -200,41 +200,41 @@ function setup(shaders) {
     const light1Gui = lightsGui.addFolder("light 1");
 
     const light1Position = light1Gui.addFolder("position");
-    light1Position.add(lights.light1.position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light1Position.add(lights.light1.position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light1Position.add(lights.light1.position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light1Position.add(lights[0].position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light1Position.add(lights[0].position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light1Position.add(lights[0].position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
 
-    light1Gui.addColor(lights.light1, "ambient").listen();
-    light1Gui.addColor(lights.light1, "diffuse").listen();
-    light1Gui.addColor(lights.light1, "specular").listen();
-    light1Gui.add(lights.light1, "directional").listen();
-    light1Gui.add(lights.light1, "active").listen();
+    light1Gui.addColor(lights[0], "ambient").listen();
+    light1Gui.addColor(lights[0], "diffuse").listen();
+    light1Gui.addColor(lights[0], "specular").listen();
+    light1Gui.add(lights[0], "directional").listen();
+    light1Gui.add(lights[0], "active").listen();
 
     const light2Gui = lightsGui.addFolder("light 2");
 
     const light2Position = light2Gui.addFolder("position");
-    light2Position.add(lights.light2.position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light2Position.add(lights.light2.position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light2Position.add(lights.light2.position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light2Position.add(lights[1].position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light2Position.add(lights[1].position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light2Position.add(lights[1].position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
 
-    light2Gui.addColor(lights.light2, "ambient").listen();
-    light2Gui.addColor(lights.light2, "diffuse").listen();
-    light2Gui.addColor(lights.light2, "specular").listen();
-    light2Gui.add(lights.light2, "directional").listen();
-    light2Gui.add(lights.light2, "active").listen();
+    light2Gui.addColor(lights[1], "ambient").listen();
+    light2Gui.addColor(lights[1], "diffuse").listen();
+    light2Gui.addColor(lights[1], "specular").listen();
+    light2Gui.add(lights[1], "directional").listen();
+    light2Gui.add(lights[1], "active").listen();
 
     const light3Gui = lightsGui.addFolder("light 3");
 
     const light3Position = light3Gui.addFolder("position");
-    light3Position.add(lights.light3.position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light3Position.add(lights.light3.position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light3Position.add(lights.light3.position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light3Position.add(lights[2].position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light3Position.add(lights[2].position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
+    light3Position.add(lights[2].position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
 
-    light3Gui.addColor(lights.light3, "ambient").listen();
-    light3Gui.addColor(lights.light3, "diffuse").listen();
-    light3Gui.addColor(lights.light3, "specular").listen();
-    light3Gui.add(lights.light3, "directional").listen();
-    light3Gui.add(lights.light3, "active").listen();
+    light3Gui.addColor(lights[2], "ambient").listen();
+    light3Gui.addColor(lights[2], "diffuse").listen();
+    light3Gui.addColor(lights[2], "specular").listen();
+    light3Gui.add(lights[2], "directional").listen();
+    light3Gui.add(lights[2], "active").listen();
 
 
     //
@@ -426,9 +426,6 @@ function setup(shaders) {
         renderObjectsGui();
 
         console.log(transform);
-
-        //TODO delete this, this has no reason to be here, but it is easier this way
-        console.log("Light 1: ", lights.light1); 
     })
 
     window.requestAnimationFrame(render);
@@ -448,13 +445,16 @@ function setup(shaders) {
 
     function uploadModelView(material)
     {
+        
         gl.useProgram(program);
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
         
         let activeLights = 0;
-
-        for(let i = 0; i< lights.length ;i++){
-            if (!lights[i].active) continue;
+        
+        for(let i = 0; i < lights.length ;i++){
+            if (!lights[i].active){
+                continue;
+            }
 
             activeLights++;
             const Pos = gl.getUniformLocation(program, `uLight[${i}].pos`);
@@ -462,7 +462,8 @@ function setup(shaders) {
             const Id  = gl.getUniformLocation(program, `uLight[${i}].Id` );
             const Is  = gl.getUniformLocation(program, `uLight[${i}].Is` );
 
-            gl.uniform4fv(Pos, lights[i].position);
+            let curLightPos = vec4(lights[i].position.x, lights[i].position.y, lights[i].position.z, lights[i].position.w);
+            gl.uniform4fv(Pos, curLightPos);
             gl.uniform3fv(Ia, flatten(vec3(lights[i].ambient.map( function(x) { return x/255 }))));
             gl.uniform3fv(Id, flatten(vec3(lights[i].diffuse.map( function(x) { return x/255 }))));
             gl.uniform3fv(Is, flatten(vec3(lights[i].specular.map(function(x) { return x/255 }))));

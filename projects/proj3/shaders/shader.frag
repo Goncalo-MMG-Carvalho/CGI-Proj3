@@ -25,7 +25,6 @@ uniform int uNLights;
 uniform LightInfo uLight[MAX_LIGHTS]; // The array of lights present in the scene
 uniform MaterialInfo uMaterial; // The material of the object being drawn
 
-
 void main()
 {
     vec3 c = vec3(1.0, 1.0, 1.0);
@@ -34,25 +33,25 @@ void main()
         c = 0.5 *(fNormal + vec3(1.0, 1.0, 1.0));
 
     else {
-        vec3 intensity;
+        vec3 intensity = vec3(0.0, 0.0, 0.0);
 
         for (int i = 0; i < MAX_LIGHTS; i++) {
             if (i >= uNLights) break; // no more lights to process
 
             vec3 L;
-            
+
             if(uLight[i].pos.w == 0.0)  // if is a vector
                 L = normalize(uLight[i].pos.xyz);
             else                        // if is a point
                 L = normalize(uLight[i].pos.xyz + fViewer); 
-
+            
             vec3 V = normalize(fViewer);  
             vec3 N = normalize(fNormal); 
-            vec3 H = normalize(L+V);
+            vec3 R = reflect(-L, N);
 
             vec3 ambient = uLight[i].Ia * uMaterial.Ka;
             vec3 diffuse = uLight[i].Id * uMaterial.Kd * max(dot(L,N), 0.0);
-            vec3 specular = uLight[i].Is * uMaterial.Ks * pow(max(dot(N, H), 0.0), uMaterial.shininess);
+            vec3 specular = uLight[i].Is * uMaterial.Ks * pow(max(dot(R, V), 0.0), uMaterial.shininess);
 
             if( dot(L,N) < 0.0 ) { 
                 specular = vec3(0.0, 0.0, 0.0); 
