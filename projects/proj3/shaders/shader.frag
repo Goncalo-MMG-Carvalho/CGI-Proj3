@@ -1,6 +1,7 @@
 precision highp float;
+precision highp int;
 
-const int MAX_LIGHTS = 8; 
+const int MAX_LIGHTS = 3; 
 
 struct LightInfo { 
     vec4 pos; 
@@ -18,8 +19,6 @@ struct MaterialInfo {
 
 varying vec3 fNormal;
 varying vec3 fViewer;
-//varying vec3 fLight;
-
 
 uniform bool uUseNormals;
 uniform int uNLights; 
@@ -38,19 +37,22 @@ void main()
         vec3 intensity;
 
         for (int i = 0; i < MAX_LIGHTS; i++) {
+            if (i >= uNLights) break; // no more lights to process
+
             vec3 L;
-            if(uLight[i].pos.w == 0.0) // is a vector or a point
+            
+            if(uLight[i].pos.w == 0.0)  // if is a vector
                 L = normalize(uLight[i].pos.xyz);
-            else
+            else                        // if is a point
                 L = normalize(uLight[i].pos.xyz + fViewer); 
 
             vec3 V = normalize(fViewer);  
             vec3 N = normalize(fNormal); 
             vec3 H = normalize(L+V);
 
-            vec3 ambient = uLight[i].Ia/255.0 * uMaterial.Ka/255.0;
-            vec3 diffuse = uLight[i].Id/255.0 * uMaterial.Kd/255.0 * max(dot(L,N), 0.0);
-            vec3 specular = uLight[i].Is/255.0 * uMaterial.Ks/255.0 * pow(max(dot(N, H), 0.0), uMaterial.shininess);
+            vec3 ambient = uLight[i].Ia * uMaterial.Ka;
+            vec3 diffuse = uLight[i].Id * uMaterial.Kd * max(dot(L,N), 0.0);
+            vec3 specular = uLight[i].Is * uMaterial.Ks * pow(max(dot(N, H), 0.0), uMaterial.shininess);
 
             if( dot(L,N) < 0.0 ) { 
                 specular = vec3(0.0, 0.0, 0.0); 

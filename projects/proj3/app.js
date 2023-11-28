@@ -19,6 +19,8 @@ const FLOOR_COLOR = vec4(0.5, 0.5, 0.5, 1.0);
 
 function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
+
+    /** @type WebGLRenderingContext */
     const gl = setupWebGL(canvas);
 
     // Init Objects
@@ -32,6 +34,19 @@ function setup(shaders) {
 
 
     const program = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader.frag']);
+
+    const floorObject = {
+        name: "Floor",
+        position: { x: 0, y: -0.1, z: 0 }, // [0, -0.1, 0]
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 4, y: 0.2, z: 4 }, //[4, -0.2, 4]
+        material: {
+            Ka: [192, 162, 140],
+            Kd: [103, 150, 172],
+            Ks: [200, 200, 200],
+            shininess: 100
+        }
+    }
 
     let object1 = {
         name: "Bunny",
@@ -111,28 +126,30 @@ function setup(shaders) {
     // Light settings
     let lights = {
         light1: {
-            position: { x: 0, y: 0, z: 0 },
-            ambient: [255, 0, 0],
-            diffuse: [255, 0, 0],
-            specular: [255, 0, 0],
-            directional: false,
+            position: { x: 3, y: 0, z: 0, w: 1},
+            ambient: [255, 255, 255],
+            diffuse: [255, 255, 255],
+            specular: [255, 255, 255],
+            directional: true,
             active: true,
         },
+
         light2: {
-            position: { x: 0, y: 0, z: 0 },
-            ambient: [255, 0, 0],
-            diffuse: [255, 0, 0],
-            specular: [255, 0, 0],
+            position: { x: 0, y: 3, z: 0, w: 0},
+            ambient: [255, 255, 255],
+            diffuse: [255, 255, 255],
+            specular: [255, 255, 255],
             directional: false,
-            active: true,
+            active: false,
         },
+
         light3: {
-            position: { x: 0, y: 0, z: 0 },
-            ambient: [255, 0, 0],
-            diffuse: [255, 0, 0],
-            specular: [255, 0, 0],
+            position: { x: 0, y: 0, z: 3, w: 0},
+            ambient: [255, 255, 255],
+            diffuse: [255, 255, 255],
+            specular: [255, 255, 255],
             directional: false,
-            active: true,
+            active: false,
         },
     }
 
@@ -217,6 +234,7 @@ function setup(shaders) {
     light3Gui.addColor(lights.light3, "diffuse").listen();
     light3Gui.addColor(lights.light3, "specular").listen();
     light3Gui.add(lights.light3, "directional").listen();
+    light3Gui.add(lights.light3, "active").listen();
 
 
     //
@@ -377,7 +395,6 @@ function setup(shaders) {
         }
     }
 
-
     window.addEventListener("keypress", (evt) => {
         switch (evt.key) {
             case "1":
@@ -409,6 +426,9 @@ function setup(shaders) {
         renderObjectsGui();
 
         console.log(transform);
+
+        //TODO delete this, this has no reason to be here, but it is easier this way
+        console.log("Light 1: ", lights.light1); 
     })
 
     window.requestAnimationFrame(render);
@@ -422,55 +442,47 @@ function setup(shaders) {
         gl.viewport(0, 0, canvas.width, canvas.height);
     }
 
-
-    function uploadModelView() {
+    /*function uploadModelView() {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
-    }
-
+    }*/
 
     function uploadModelView(material)
     {
         gl.useProgram(program);
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
+        
+        let activeLights = 0;
 
         for(let i = 0; i< lights.length ;i++){
-            const uShininess = gl.getUniformLocation(program, "uMaterial.uShininess");
-            const uKa = gl.getUniformLocation(program, "uMaterial.uKa");
-            const uKd = gl.getUniformLocation(program, "uMaterial.uKd");
-            const uKs = gl.getUniformLocation(program, "uMaterial.uKs");
-            const uNLights = gl.getUniformLocation(program, "uNLights");
-            const uFovy = gl.getUniformLocation(program, "uFovy"); 
+            if (!lights[i].active) continue;
 
-            const uPosition = gl.getUniformLocation(program, `uLights[${i}].uPosition`); 
-            const uAmbient = gl.getUniformLocation(program, `uLights[${i}].uAmbient`); 
-            const uSpecular = gl.getUniformLocation(program, `uLights[${i}].uSpecular`); 
-            const uDiffuse = gl.getUniformLocation(program, `uLights[${i}].uDiffuse`);
+            activeLights++;
+            const Pos = gl.getUniformLocation(program, `uLight[${i}].pos`);
+            const Ia  = gl.getUniformLocation(program, `uLight[${i}].Ia` );
+            const Id  = gl.getUniformLocation(program, `uLight[${i}].Id` );
+            const Is  = gl.getUniformLocation(program, `uLight[${i}].Is` );
 
-            gl.uniform3fv(uKa, flatten(vec3(material.Ka)));
-            gl.uniform3fv(uKd, flatten(vec3(material.Kd)));
-            gl.uniform3fv(uKs, flatten(vec3(material.Ks)));
-            gl.uniform1f(uShininess, material.shininess);
-            gl.uniform1f(uFovy, camera.fovy);
-            gl.uniform1f(uNLights, 3);
-
-            gl.uniform3fv(uAmbient, flatten(vec3(lights[i].ambient)));
-            gl.uniform3fv(uSpecular, flatten(vec3(lights[i].specular)));
-            gl.uniform3fv(uDiffuse, flatten(vec3(lights[i].diffuse)));
-            gl.uniform4fv(uPosition,lights[i].position);
-            gl.uniform3fv(uAxix,lights[i].axis);
-            gl.uniform1f(uApertures,lights[i].apertures);
-            gl.uniform1f(uCutoff,lights[i].cutoff);
+            gl.uniform4fv(Pos, lights[i].position);
+            gl.uniform3fv(Ia, flatten(vec3(lights[i].ambient.map( function(x) { return x/255 }))));
+            gl.uniform3fv(Id, flatten(vec3(lights[i].diffuse.map( function(x) { return x/255 }))));
+            gl.uniform3fv(Is, flatten(vec3(lights[i].specular.map(function(x) { return x/255 }))));
         }
+        
+        const uNLights = gl.getUniformLocation(program, "uNLights");
+        gl.uniform1i(uNLights, activeLights);
+
+        const Ka = gl.getUniformLocation(program, "uMaterial.Ka");
+        const Kd = gl.getUniformLocation(program, "uMaterial.Kd");
+        const Ks = gl.getUniformLocation(program, "uMaterial.Ks");
+        const Shininess = gl.getUniformLocation(program, "uMaterial.shininess");
+
+        gl.uniform3fv(Ka, flatten(vec3(material.Ka.map(function(x) { return x/255 }))));
+        gl.uniform3fv(Kd, flatten(vec3(material.Kd.map(function(x) { return x/255 }))));
+        gl.uniform3fv(Ks, flatten(vec3(material.Ks.map(function(x) { return x/255 }))));
+        gl.uniform1f(Shininess, material.shininess/300);
     }
 
-
-    function drawFloor() {
-        multTranslation([0, -0.1, 0]);
-        multScale([4, -0.2, 4]);
-        uploadModelView();
-        CUBE.draw(gl, program, gl.TRIANGLES);
-    }
-
+    /* TODO função para desenhar os objetos da cena através do json
     function drawObjects(obj) { // Uses the scene json
         pushMatrix();
         obj.scale ?? multScale(obj.scale);
@@ -489,6 +501,19 @@ function setup(shaders) {
         }
 
         popMatrix();
+    }*/
+
+    function drawObject(obj) { // doesn't use scene json
+        multTranslation([obj.position.x, obj.position.y, obj.position.z]);
+        multRotationX(obj.rotation.x);
+        multRotationY(obj.rotation.y);
+        multRotationZ(obj.rotation.z);
+        multScale([obj.scale.x, obj.scale.y, obj.scale.z]);
+
+        uploadModelView(obj.material);
+
+        let type = fromNameGetType(obj.name);
+        type.draw(gl, program, gl.TRIANGLES);
     }
 
     function fromNameGetType(name) {
@@ -507,20 +532,9 @@ function setup(shaders) {
                 return SPHERE;
             case "Torus":
                 return TORUS;
+            case "Floor":
+                return CUBE;        
         }
-    }
-
-    function drawObject(obj) { // doesn't use scene
-        multTranslation([obj.position.x, obj.position.y, obj.position.z]);
-        multRotationX(obj.rotation.x);
-        multRotationY(obj.rotation.y);
-        multRotationZ(obj.rotation.z);
-        multScale([obj.scale.x, obj.scale.y, obj.scale.z]);
-
-        uploadModelView(/*obj.material*/); // uncomment object material when done
-
-        let type = fromNameGetType(obj.name);
-        type.draw(gl, program, gl.TRIANGLES);
     }
 
     function render(time) {
@@ -546,9 +560,10 @@ function setup(shaders) {
         gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
 
         saveBack();
+        
 
         pushMatrix();
-        /**/drawFloor();
+        /**/drawObject(floorObject);
         popMatrix();
 
         pushMatrix();
