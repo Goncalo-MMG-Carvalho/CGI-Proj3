@@ -40,7 +40,7 @@ let scene = {
             scale: [2, -0.2, 2],
             translation: [0, 0, 0],
             rotateY: 0,
-            shape: CUBE
+            shape: CUBE,
             mode: "TRIANGLES",
 
             material: {
@@ -51,7 +51,7 @@ let scene = {
             }
         },
 
-        // COW
+        // Default is COW
         {
             scale: [1,1,1],
             translation: [1, 0, 0],
@@ -59,7 +59,7 @@ let scene = {
             shape: COW,
         },
 
-        // BUNNY
+        // Default is BUNNY
         {
             scale: [1,1,1],
             translation: [-1, 0, 0],

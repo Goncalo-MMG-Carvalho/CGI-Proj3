@@ -6,9 +6,12 @@ uniform mat4 mModelView;
 uniform mat4 mNormals;
 
 varying vec3 fNormal;
+varying vec3 fCameraPos;
 
 void main()
 {
+
     gl_Position = mProjection * mModelView * vPosition;
     fNormal = (mNormals * vec4(vNormal, 0.0)).xyz;
+    fCameraPos = (mModelView * vPosition).xyz;
 }
