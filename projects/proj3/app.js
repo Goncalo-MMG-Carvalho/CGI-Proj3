@@ -41,9 +41,9 @@ function setup(shaders) {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 4, y: 0.2, z: 4 }, //[4, -0.2, 4]
         material: {
-            Ka: [192, 162, 140],
-            Kd: [103, 150, 172],
-            Ks: [200, 200, 200],
+            Ka: [100, 100, 100],
+            Kd: [100, 100, 100],
+            Ks: [0, 0, 0],
             shininess: 100
         }
     }
@@ -55,8 +55,8 @@ function setup(shaders) {
         scale: { x: 1, y: 1, z: 1 },
         material: {
             Ka: [233, 192, 234],
-            Kd: [200, 200, 200],
-            Ks: [200, 200, 200],
+            Kd: [10, 10, 2],
+            Ks: [50, 50, 50],
             shininess: 100
         }
     };
@@ -68,8 +68,8 @@ function setup(shaders) {
         scale: { x: 1, y: 1, z: 1 },
         material: {
             Ka: [193, 92, 85],
-            Kd: [200, 200, 200],
-            Ks: [200, 200, 200],
+            Kd: [10, 10, 2],
+            Ks: [50, 50, 50],
             shininess: 100
         }
     };
@@ -81,8 +81,8 @@ function setup(shaders) {
         scale: { x: 1, y: 1, z: 1 },
         material: {
             Ka: [63, 224, 26],
-            Kd: [200, 200, 200],
-            Ks: [200, 200, 200],
+            Kd: [10, 10, 2],
+            Ks: [50, 50, 50],
             shininess: 100
         }
     };
@@ -94,8 +94,8 @@ function setup(shaders) {
         scale: { x: 1, y: 1, z: 1 },
         material: {
             Ka: [22, 109, 3],
-            Kd: [200, 200, 200],
-            Ks: [200, 200, 200],
+            Kd: [10, 10, 2],
+            Ks: [50, 50, 50],
             shininess: 100
         }
     };
