@@ -99,7 +99,7 @@ function setup(shaders) {
     // Options
     let options = {
         wireframe: false,
-        normals: true,
+        normals: false,
         backfaceCulling: false,
         depthtest: true
     }
