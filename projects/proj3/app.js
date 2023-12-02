@@ -13,8 +13,6 @@ import * as TORUS from '../../libs/objects/torus.js';
 
 import { modelView, loadIdentity, loadMatrix, pushMatrix, popMatrix, multMatrix, multTranslation, multScale, multRotationX, multRotationY, multRotationZ } from '../../libs/stack.js';
 
-import scene from './scene.js';
-
 const ROTATE_ANGLE = 1;
 const OFFSETT_Y = 0.5;
 
@@ -56,10 +54,10 @@ function setup(shaders) {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
-            Ka: [0, 100, 150],
-            Kd: [0, 100, 125],
-            Ks: [200, 200, 200],
-            shininess: 100
+            Ka: [151, 165, 172],
+            Kd: [85, 156, 85],
+            Ks: [35, 35, 35],
+            shininess: 300
         }
     };
 
@@ -69,10 +67,10 @@ function setup(shaders) {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
-            Ka: [150, 150, 150],
-            Kd: [150, 150, 150],
-            Ks: [200, 200, 200],
-            shininess: 100
+            Ka: [19, 207, 25],
+            Kd: [78, 78, 78],
+            Ks: [55, 74, 146],
+            shininess: 300
         }
     };
 
@@ -82,10 +80,10 @@ function setup(shaders) {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
-            Ka: [237, 74, 74],
-            Kd: [237, 74, 74],
-            Ks: [50, 50, 50],
-            shininess: 100
+            Ka: [0, 18, 255],
+            Kd: [0, 0, 255],
+            Ks: [0, 25, 255],
+            shininess: 300
         }
     };
 
@@ -95,10 +93,10 @@ function setup(shaders) {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
-            Ka: [22, 109, 3],
-            Kd: [10, 10, 2],
-            Ks: [50, 50, 50],
-            shininess: 100
+            Ka: [255, 0, 0],
+            Kd: [136, 176, 129],
+            Ks: [255, 255, 255],
+            shininess: 300
         }
     };
 
@@ -130,9 +128,9 @@ function setup(shaders) {
     let lights = [
         { // light1
             position: { x: 3, y: 0, z: 0 },
-            ambient: [51, 51, 51],
-            diffuse: [76, 76, 76],
-            specular: [255, 255, 255],
+            ambient: [82, 87, 152],
+            diffuse: [187, 87, 87],
+            specular: [18, 12, 12],
             directional: false,
             active: true,
         },
@@ -141,21 +139,21 @@ function setup(shaders) {
             position: { x: 0, y: 3, z: 0 },
             ambient: [51, 51, 51],
             diffuse: [76, 76, 76],
-            specular: [255, 255, 255],
+            specular: [10, 10, 10],
             directional: false,
-            active: true,
+            active: false,
         },
 
         { // light3
             position: { x: 0, y: 0, z: 3 },
-            ambient: [51, 51, 51],
-            diffuse: [76, 76, 76],
-            specular: [255, 255, 255],
+            ambient: [82, 87, 152],
+            diffuse: [187, 87, 87],
+            specular: [10, 10, 10],
             directional: false,
-            active: true,
+            active: false,
         },
     ];
-11
+
     //
     // CONTROLS GUI
     // - Top right corner
@@ -464,30 +462,6 @@ function setup(shaders) {
 
         gl.useProgram(program);
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
-
-        // let nextLight = 0;
-
-        // for (let i = 0; i < lights.length; i++) {
-        //     if (!lights[i].active) {
-        //         continue;
-        //     }
-            
-        //     const Pos = gl.getUniformLocation(program, `uLight[${nextLight}].pos`);
-        //     const Ia = gl.getUniformLocation(program, `uLight[${nextLight}].Ia`);
-        //     const Id = gl.getUniformLocation(program, `uLight[${nextLight}].Id`);
-        //     const Is = gl.getUniformLocation(program, `uLight[${nextLight}].Is`);
-
-        //     let curLightPos = vec4(lights[i].position.x, lights[i].position.y, lights[i].position.z, lights[i].directional ? 0.0 : 1.0);
-        //     gl.uniform4fv(Pos, curLightPos);
-        //     gl.uniform3fv(Ia, flatten(vec3(lights[i].ambient.map(x => x / 255))));
-        //     gl.uniform3fv(Id, flatten(vec3(lights[i].diffuse.map(x => x / 255))));
-        //     gl.uniform3fv(Is, flatten(vec3(lights[i].specular.map(x => x / 255))));
-
-        //     nextLight++;
-        // }
-
-        // const uNLights = gl.getUniformLocation(program, "uNLights");
-        // gl.uniform1i(uNLights, lights.reduce((active, current) => current.active ? active + 1 : active, 0));
 
         const Ka = gl.getUniformLocation(program, "uMaterial.Ka");
         const Kd = gl.getUniformLocation(program, "uMaterial.Kd");

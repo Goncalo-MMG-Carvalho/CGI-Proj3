@@ -19,7 +19,6 @@ struct MaterialInfo {
 varying vec3 fNormal;
 varying vec3 fViewer;
 
-uniform bool uUseNormals;
 uniform int uNLights; // The number of lights active or inactive
 uniform LightInfo uLight[MAX_LIGHTS]; // The array of lights present in the scene
 uniform MaterialInfo uMaterial; // The material of the object being drawn
@@ -64,19 +63,3 @@ void main()
     }
     gl_FragColor = tempColor;
 }
-
-/*
-I = cor do pixel
-
-N = vetor normal
-L = angulo da luz
-R = angulo de reflexão de da luz = -L
-
-
-dot() = produto interno
-
-
-I = SUM(i,l)(Iai*Kai + Idi*Kdi*dot(N,L) + Isi*Ksi*dot(R,V)^n
-*/
-
-
