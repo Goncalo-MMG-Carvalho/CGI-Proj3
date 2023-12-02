@@ -7,12 +7,13 @@ uniform mat4 mNormals;
 
 varying vec3 fNormal;
 varying vec3 fViewer;
-//varying vec3 fLight;
 
 void main()
 {
     gl_Position = mProjection * mModelView * vPosition;
     
-    fNormal = (mNormals * vec4(vNormal, 0.0)).xyz;
-    fViewer = -(mModelView * vPosition).xyz;
+    //fNormal = (mNormals * vec4(vNormal, 0.0)).xyz;
+    fNormal = mat3(mModelView) * normalize(vNormal);
+
+    fViewer = -(mModelView * vPosition).xyz; // - position of the camera
 }

@@ -1,0 +1,17 @@
+
+Luzes todas [L1, L2, L3]
+
+---> Com so L1 ativa
+|-> Shader: [L1, _, _, ...]
+
+--> So com L2 ativa
+|-> Sharder: [L2, _, _, ...]
+
+uNLights -> Numero de luzes
+
+
+
+
+
+luzes no shader
+

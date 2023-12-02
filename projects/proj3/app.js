@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from '../../libs/utils.js';
-import { length, flatten, inverse, mult, normalMatrix, perspective, lookAt, vec4, vec3, vec2, subtract, add, scale, rotate, normalize } from '../../libs/MV.js';
+import { length, flatten, inverse, mult, normalMatrix, perspective, lookAt, vec4, vec3, vec2, subtract, add, scale, rotate, rotateX, rotateY, rotateZ, normalize, transpose } from '../../libs/MV.js';
 
 import * as dat from '../../libs/dat.gui.module.js';
 
@@ -15,7 +15,8 @@ import { modelView, loadIdentity, loadMatrix, pushMatrix, popMatrix, multMatrix,
 
 import scene from './scene.js';
 
-const FLOOR_COLOR = vec4(0.5, 0.5, 0.5, 1.0);
+const ROTATE_ANGLE = 1;
+const OFFSETT_Y = 0.5;
 
 function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
@@ -38,7 +39,7 @@ function setup(shaders) {
 
     const floorObject = {
         name: "Floor",
-        position: { x: 0, y: -0.1, z: 0 }, // [0, -0.1, 0]
+        position: { x: 0, y: -0.1-OFFSETT_Y, z: 0 }, // [0, -0.1, 0]
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 4, y: 0.2, z: 4 }, //[4, -0.2, 4]
         material: {
@@ -51,38 +52,38 @@ function setup(shaders) {
 
     let object1 = {
         name: "Bunny",
-        position: { x: 1, y: 0.5, z: 1 }, // Default position
+        position: { x: 1, y: 0, z: 1 }, // Default position
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
-            Ka: [233, 192, 234],
-            Kd: [10, 10, 2],
-            Ks: [50, 50, 50],
+            Ka: [0, 100, 150],
+            Kd: [0, 100, 125],
+            Ks: [200, 200, 200],
             shininess: 100
         }
     };
 
     let object2 = {
         name: "Cow",
-        position: { x: 1, y: 0.5, z: -1 }, // Default position 
+        position: { x: -1, y: 0, z: 1 }, // Default position 
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
-            Ka: [193, 92, 85],
-            Kd: [10, 10, 2],
-            Ks: [50, 50, 50],
+            Ka: [150, 150, 150],
+            Kd: [150, 150, 150],
+            Ks: [200, 200, 200],
             shininess: 100
         }
     };
 
     let object3 = {
         name: "Cube",
-        position: { x: -1, y: 0.5, z: 1 }, // Default position 
+        position: { x: -1, y: 0, z: -1 }, // Default position 
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
-            Ka: [63, 224, 26],
-            Kd: [10, 10, 2],
+            Ka: [237, 74, 74],
+            Kd: [237, 74, 74],
             Ks: [50, 50, 50],
             shininess: 100
         }
@@ -90,7 +91,7 @@ function setup(shaders) {
 
     let object4 = {
         name: "Sphere",
-        position: { x: -1, y: 0.5, z: -1 }, // Default position
+        position: { x: 1, y: 0, z: -1 }, // Default position
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 },
         material: {
@@ -128,33 +129,33 @@ function setup(shaders) {
     // Light settings
     let lights = [
         { // light1
-            position: { x: 3, y: 0, z: 0, w: 1},
-            ambient: [255, 255, 255],
-            diffuse: [255, 255, 255],
+            position: { x: 3, y: 0, z: 0 },
+            ambient: [51, 51, 51],
+            diffuse: [76, 76, 76],
             specular: [255, 255, 255],
-            directional: true,
+            directional: false,
             active: true,
         },
 
         { // light2
-            position: { x: 0, y: 3, z: 0, w: 0},
-            ambient: [255, 255, 255],
-            diffuse: [255, 255, 255],
+            position: { x: 0, y: 3, z: 0 },
+            ambient: [51, 51, 51],
+            diffuse: [76, 76, 76],
             specular: [255, 255, 255],
             directional: false,
-            active: false,
+            active: true,
         },
 
         { // light3
-            position: { x: 0, y: 0, z: 3, w: 0},
-            ambient: [255, 255, 255],
-            diffuse: [255, 255, 255],
+            position: { x: 0, y: 0, z: 3 },
+            ambient: [51, 51, 51],
+            diffuse: [76, 76, 76],
             specular: [255, 255, 255],
             directional: false,
-            active: false,
+            active: true,
         },
     ];
-
+11
     //
     // CONTROLS GUI
     // - Top right corner
@@ -202,7 +203,7 @@ function setup(shaders) {
         let light = lights[i];
 
         const lightGui = lightsGui.addFolder(`Light ${i + 1}`);
-        
+
         const lightPosition = lightGui.addFolder("position");
         lightPosition.add(light.position, "x").step(0.05).listen()
         lightPosition.add(light.position, "y").step(0.05).listen()
@@ -231,9 +232,9 @@ function setup(shaders) {
         const guiTransforms = objectsGui.addFolder("transform");
 
         const guiPosition = guiTransforms.addFolder("position");
-        guiPosition.add(transform.position, "x").listen();
-        guiPosition.add(transform.position, "y").listen().domElement.style.pointerEvents = "none";
-        guiPosition.add(transform.position, "z").listen();
+        guiPosition.add(transform.position, "x").min(-1).max(1).listen();
+        guiPosition.add(transform.position, "y").min(-1).max(1).listen().domElement.style.pointerEvents = "none";
+        guiPosition.add(transform.position, "z").min(-1).max(1).listen();
 
         const guiRotation = guiTransforms.addFolder("rotation");
         guiRotation.add(transform.rotation, "x").listen().domElement.style.pointerEvents = "none";
@@ -241,9 +242,9 @@ function setup(shaders) {
         guiRotation.add(transform.rotation, "z").listen().domElement.style.pointerEvents = "none";
 
         const guiScale = guiTransforms.addFolder("scale");
-        guiScale.add(transform.scale, "x").listen();
-        guiScale.add(transform.scale, "y").listen();
-        guiScale.add(transform.scale, "z").listen();
+        guiScale.add(transform.scale, "x").min(0).max(1).listen();
+        guiScale.add(transform.scale, "y").min(0).max(1).listen();
+        guiScale.add(transform.scale, "z").min(0).max(1).listen();
 
         const guiMaterial = guiTransforms.addFolder("material");
         guiMaterial.addColor(transform.material, "Ka").listen();
@@ -341,7 +342,6 @@ function setup(shaders) {
                 lastX = event.offsetX;
                 lastY = event.offsetY;
             }
-
         }
     });
 
@@ -379,30 +379,42 @@ function setup(shaders) {
             case "1":
                 console.log("Activating object 1")
                 saveBack();
+                if (activeObject === "1") activeWireframe = !activeWireframe;
+                else activeWireframe = true;
+                
                 activeObject = "1";
                 transform = { ...object1 } // JSON.parse(JSON.stringify(object1)) // Object.assign({}, object1);
-                activeWireframe = true;
                 break;
+
             case "2":
                 console.log("Activating object 2")
                 saveBack();
+                if (activeObject === "2") activeWireframe = !activeWireframe;
+                else activeWireframe = true;
+
                 activeObject = "2";
                 transform = { ...object2 } // Object.assign({}, object2);
-                activeWireframe = true;
                 break;
+
             case "3":
                 console.log("Activating object 3")
                 saveBack();
+                if (activeObject === "3") activeWireframe = !activeWireframe;
+                else activeWireframe = true;
+
                 activeObject = "3";
                 transform = { ...object3 } // Object.assign({}, object3);
-                activeWireframe = true;
+                activeWireframe = !activeWireframe;
                 break;
+
             case "4":
                 console.log("Activating object 4")
                 saveBack();
+                if (activeObject === "4") activeWireframe = !activeWireframe;
+                else activeWireframe = true;
+
                 activeObject = "4";
                 transform = { ...object4 } // Object.assign({}, object4);
-                activeWireframe = true;
                 break;
         }
         objectsGui.destroy();
@@ -422,74 +434,74 @@ function setup(shaders) {
         gl.viewport(0, 0, canvas.width, canvas.height);
     }
 
-    function uploadModelView(material)
-    {
-        
-        gl.useProgram(program);
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
+    function uploadLights() {
+        let nextLight = 0;
 
-        for(let i = 0; i < lights.length; i++) {
-            
-            //this segment of code is done before to potencially deactivate the light in the shader, 
-            //as the shader saves, the light info from frame to frame 
-            const active = gl.getUniformLocation(program, `uLight[${i}].active`);
-            gl.uniform1i(active, lights[i].active ? 1 : 0);
-            
+        for (let i = 0; i < lights.length; i++) {
             if (!lights[i].active) {
                 continue;
             }
+            
+            const Pos = gl.getUniformLocation(program, `uLight[${nextLight}].pos`);
+            const Ia = gl.getUniformLocation(program, `uLight[${nextLight}].Ia`);
+            const Id = gl.getUniformLocation(program, `uLight[${nextLight}].Id`);
+            const Is = gl.getUniformLocation(program, `uLight[${nextLight}].Is`);
 
-            const Pos = gl.getUniformLocation(program, `uLight[${i}].pos`);
-            const Ia  = gl.getUniformLocation(program, `uLight[${i}].Ia` );
-            const Id  = gl.getUniformLocation(program, `uLight[${i}].Id` );
-            const Is  = gl.getUniformLocation(program, `uLight[${i}].Is` );
-            //const active = gl.getUniformLocation(program, `uLight[${i}].active` );
-
-            let curLightPos = vec4(lights[i].position.x, lights[i].position.y, lights[i].position.z, lights[i].position.w);
+            let curLightPos = vec4(lights[i].position.x, lights[i].position.y, lights[i].position.z, lights[i].directional ? 0.0 : 1.0);
             gl.uniform4fv(Pos, curLightPos);
             gl.uniform3fv(Ia, flatten(vec3(lights[i].ambient.map(x => x / 255))));
             gl.uniform3fv(Id, flatten(vec3(lights[i].diffuse.map(x => x / 255))));
             gl.uniform3fv(Is, flatten(vec3(lights[i].specular.map(x => x / 255))));
-            //gl.uniform1i(active, lights[i].active ? 1 : 0);
+
+            nextLight++;
         }
-        
+
         const uNLights = gl.getUniformLocation(program, "uNLights");
-        gl.uniform1i(uNLights, lights.length);
+        gl.uniform1i(uNLights, lights.reduce((active, current) => current.active ? active + 1 : active, 0));
+    }
+
+    function uploadModelView(material) {
+
+        gl.useProgram(program);
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
+
+        // let nextLight = 0;
+
+        // for (let i = 0; i < lights.length; i++) {
+        //     if (!lights[i].active) {
+        //         continue;
+        //     }
+            
+        //     const Pos = gl.getUniformLocation(program, `uLight[${nextLight}].pos`);
+        //     const Ia = gl.getUniformLocation(program, `uLight[${nextLight}].Ia`);
+        //     const Id = gl.getUniformLocation(program, `uLight[${nextLight}].Id`);
+        //     const Is = gl.getUniformLocation(program, `uLight[${nextLight}].Is`);
+
+        //     let curLightPos = vec4(lights[i].position.x, lights[i].position.y, lights[i].position.z, lights[i].directional ? 0.0 : 1.0);
+        //     gl.uniform4fv(Pos, curLightPos);
+        //     gl.uniform3fv(Ia, flatten(vec3(lights[i].ambient.map(x => x / 255))));
+        //     gl.uniform3fv(Id, flatten(vec3(lights[i].diffuse.map(x => x / 255))));
+        //     gl.uniform3fv(Is, flatten(vec3(lights[i].specular.map(x => x / 255))));
+
+        //     nextLight++;
+        // }
+
+        // const uNLights = gl.getUniformLocation(program, "uNLights");
+        // gl.uniform1i(uNLights, lights.reduce((active, current) => current.active ? active + 1 : active, 0));
 
         const Ka = gl.getUniformLocation(program, "uMaterial.Ka");
         const Kd = gl.getUniformLocation(program, "uMaterial.Kd");
         const Ks = gl.getUniformLocation(program, "uMaterial.Ks");
         const Shininess = gl.getUniformLocation(program, "uMaterial.shininess");
 
-        gl.uniform3fv(Ka, flatten(vec3(material.Ka.map(function(x) { return x/255 }))));
-        gl.uniform3fv(Kd, flatten(vec3(material.Kd.map(function(x) { return x/255 }))));
-        gl.uniform3fv(Ks, flatten(vec3(material.Ks.map(function(x) { return x/255 }))));
-        gl.uniform1f(Shininess, material.shininess/300);
+        gl.uniform3fv(Ka, flatten(vec3(material.Ka.map(function (x) { return x / 255 }))));
+        gl.uniform3fv(Kd, flatten(vec3(material.Kd.map(function (x) { return x / 255 }))));
+        gl.uniform3fv(Ks, flatten(vec3(material.Ks.map(function (x) { return x / 255 }))));
+        gl.uniform1f(Shininess, material.shininess / 300);
     }
 
-    /* TODO função para desenhar os objetos da cena através do json
-    function drawObjects(obj) { // Uses the scene json
-        pushMatrix();
-        obj.scale ?? multScale(obj.scale);
-        obj.translation ?? multTranslation(obj.translation);
-        obj.rotationX ?? multRotationX(obj.rotationX);
-        obj.rotationY ?? multRotationY(obj.rotationY);
-        obj.rotationZ ?? multRotationZ(obj.rotationZ);
-
-        uploadModelView();
-        if (obj.mode === "TRIANGLES") {
-            obj.shape.draw(gl, program, gl.TRIANGLES);
-        }
-
-        for (const child of obj.children) {
-            drawObjects(child);
-        }
-
-        popMatrix();
-    }*/
-
     function drawObject(obj) { // doesn't use scene json
-        multTranslation([obj.position.x, obj.position.y, obj.position.z]);
+        multTranslation([obj.position.x, obj.position.y + OFFSETT_Y, obj.position.z]);
         multRotationX(obj.rotation.x);
         multRotationY(obj.rotation.y);
         multRotationZ(obj.rotation.z);
@@ -501,14 +513,13 @@ function setup(shaders) {
         type.draw(gl, program, gl.TRIANGLES);
     }
 
-
     function drawWireFrameObject(WIREFRAME_OFFSET = 0.01) {
         console.log("Drawing wireframe object", transform.name)
-        
+
         // Apply transformations
-        multTranslation([transform.position.x, transform.position.y, transform.position.z]);
+        multTranslation([transform.position.x, transform.position.y + OFFSETT_Y, transform.position.z]);
         multRotationX(transform.rotation.x);
-        multRotationY(transform.rotation.y);2
+        multRotationY(transform.rotation.y);
         multRotationZ(transform.rotation.z);
         multScale([transform.scale.x + WIREFRAME_OFFSET, transform.scale.y + WIREFRAME_OFFSET, transform.scale.z + WIREFRAME_OFFSET]);
 
@@ -516,10 +527,32 @@ function setup(shaders) {
         gl.useProgram(wireframeProgram);
         gl.uniformMatrix4fv(gl.getUniformLocation(wireframeProgram, "mModelView"), false, flatten(modelView()));
         gl.uniformMatrix4fv(gl.getUniformLocation(wireframeProgram, "mProjection"), false, flatten(mProjection));
+        gl.uniform4fv(gl.getUniformLocation(wireframeProgram, "uColor"), flatten(vec4(1.0, 1.0, 1.0, 1.0)));
 
         // Draw
         const type = fromNameGetType(transform.name);
         type.draw(gl, wireframeProgram, gl.LINES);
+    }
+
+    function drawLights(time, animate) {
+        for (let i = 0; i < lights.length; i++) {
+            pushMatrix();
+
+            const light = lights[i];
+            const rotationAxis = (i % 3);
+
+            multTranslation([light.position.x, light.position.y, light.position.z]);
+            multScale([0.05, 0.05, 0.05]);
+
+
+            // Upload Model View
+            gl.uniformMatrix4fv(gl.getUniformLocation(wireframeProgram, "mModelView"), false, flatten(modelView()));
+            gl.uniform4fv(gl.getUniformLocation(wireframeProgram, "uColor"), flatten([...light.diffuse.map(x => x / 255), 1.0]));
+
+            SPHERE.draw(gl, wireframeProgram, gl.TRIANGLES);
+
+            popMatrix();
+        }
     }
 
     function fromNameGetType(name) {
@@ -539,8 +572,16 @@ function setup(shaders) {
             case "Torus":
                 return TORUS;
             case "Floor":
-                return CUBE;        
+                return CUBE;
         }
+    }
+
+    function rotateLight(light, axis) {
+        const rp = mult(rotate(ROTATE_ANGLE, axis), vec4(light.position.x, light.position.y, light.position.z, 1.0));
+
+        light.position.x = rp[0] / rp[3];
+        light.position.y = rp[1] / rp[3];
+        light.position.z = rp[2] / rp[3];
     }
 
     function render(time) {
@@ -548,8 +589,8 @@ function setup(shaders) {
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        options.depthtest ? gl.enable(gl.DEPTH_TEST) : gl.disable(gl.DEPTH_TEST);       //Enable/disable z-buffer
         options.backface_culling ? gl.enable(gl.CULL_FACE) : gl.disable(gl.CULL_FACE);   //Enable/disable backface culling
+        options.depthtest ? gl.enable(gl.DEPTH_TEST) : gl.disable(gl.DEPTH_TEST);       //Enable/disable z-buffer
 
         gl.useProgram(program);
 
@@ -558,16 +599,26 @@ function setup(shaders) {
 
         mProjection = perspective(camera.fovy, camera.aspect, camera.near, camera.far);
 
-
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mView"), false, flatten(mView));
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mViewNormals"), false, flatten(inverse(transpose(mView))));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(modelView())));
 
         gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
-        //gl.clearColor(0.78, 0.78, 0.78, 1.0)
-
-        saveBack();
         
+        // Rodar as luzes
+        if (options.animation) {
+            rotateLight(lights[0], [0, 0, 1]);
+            rotateLight(lights[1], [1, 0, 0]);
+            rotateLight(lights[2], [0, 1, 0]);
+        }
+
+        // Upload lights
+        uploadLights();
+
+        // Save the active object so it can be drawn
+        saveBack();
 
         pushMatrix();
         /**/drawObject(floorObject);
@@ -589,12 +640,20 @@ function setup(shaders) {
         /**/drawObject(object4);
         popMatrix();
 
-        if (activeWireframe) {1
+        // Wireframe Shader Program
+        gl.useProgram(wireframeProgram)
+        gl.uniformMatrix4fv(gl.getUniformLocation(wireframeProgram, "mProjection"), false, flatten(mProjection));
+
+        if (activeWireframe) {
             pushMatrix();
             /**/drawWireFrameObject();
             popMatrix();
         }
-            // drawObjects(scene);
+
+        if (options.show_lights) {
+            drawLights(time, options.animation);
+        }
+        // drawObjects(scene);
     }
 }
 
