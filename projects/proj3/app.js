@@ -34,6 +34,7 @@ function setup(shaders) {
 
 
     const program = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader.frag']);
+    const wireframeProgram = buildProgramFromSources(gl, shaders['wireframe.vert'], shaders['wireframe.frag']);
 
     const floorObject = {
         name: "Floor",
@@ -41,8 +42,8 @@ function setup(shaders) {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 4, y: 0.2, z: 4 }, //[4, -0.2, 4]
         material: {
-            Ka: [100, 100, 100],
-            Kd: [100, 100, 100],
+            Ka: [99, 207, 140],
+            Kd: [99, 207, 140],
             Ks: [0, 0, 0],
             shininess: 100
         }
@@ -113,15 +114,16 @@ function setup(shaders) {
 
     // Options
     let options = {
-        wireframe: false,
-        normals: false,
-        backfaceCulling: false,
-        depthtest: true
+        backface_culling: false,
+        depthtest: true,
+        show_lights: true,
+        animation: false,
     }
 
     // Active object properties
     let transform = { ...object1 } // Object.assign({}, object1);
     let activeObject = "1";
+    let activeWireframe = false;
 
     // Light settings
     let lights = [
@@ -160,12 +162,11 @@ function setup(shaders) {
 
     const gui = new dat.GUI();
 
-    gui.add(options, "backfaceCulling");
-    gui.add(options, "depthtest"); // Z-Buffer
-
     const optionsGui = gui.addFolder("options");
-    optionsGui.add(options, "wireframe");
-    optionsGui.add(options, "normals");
+    optionsGui.add(options, "backface_culling"); // Backface culling
+    optionsGui.add(options, "depthtest"); // Z-Buffer
+    optionsGui.add(options, "show_lights"); // Show lights as spheres
+    optionsGui.add(options, "animation"); // Animate lights
 
     const cameraGui = gui.addFolder("camera");
 
@@ -197,45 +198,23 @@ function setup(shaders) {
 
     const lightsGui = gui.addFolder("lights");
 
-    const light1Gui = lightsGui.addFolder("light 1");
+    for (let i = 0; i < lights.length; i++) {
+        let light = lights[i];
 
-    const light1Position = light1Gui.addFolder("position");
-    light1Position.add(lights[0].position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light1Position.add(lights[0].position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light1Position.add(lights[0].position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
+        const lightGui = lightsGui.addFolder(`Light ${i + 1}`);
+        
+        const lightPosition = lightGui.addFolder("position");
+        lightPosition.add(light.position, "x").step(0.05).listen()
+        lightPosition.add(light.position, "y").step(0.05).listen()
+        lightPosition.add(light.position, "z").step(0.05).listen()
 
-    light1Gui.addColor(lights[0], "ambient").listen();
-    light1Gui.addColor(lights[0], "diffuse").listen();
-    light1Gui.addColor(lights[0], "specular").listen();
-    light1Gui.add(lights[0], "directional").listen();
-    light1Gui.add(lights[0], "active").listen();
 
-    const light2Gui = lightsGui.addFolder("light 2");
-
-    const light2Position = light2Gui.addFolder("position");
-    light2Position.add(lights[1].position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light2Position.add(lights[1].position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light2Position.add(lights[1].position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
-
-    light2Gui.addColor(lights[1], "ambient").listen();
-    light2Gui.addColor(lights[1], "diffuse").listen();
-    light2Gui.addColor(lights[1], "specular").listen();
-    light2Gui.add(lights[1], "directional").listen();
-    light2Gui.add(lights[1], "active").listen();
-
-    const light3Gui = lightsGui.addFolder("light 3");
-
-    const light3Position = light3Gui.addFolder("position");
-    light3Position.add(lights[2].position, "x").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light3Position.add(lights[2].position, "y").step(0.05).listen().domElement.style.pointerEvents = "none";
-    light3Position.add(lights[2].position, "z").step(0.05).listen().domElement.style.pointerEvents = "none";
-
-    light3Gui.addColor(lights[2], "ambient").listen();
-    light3Gui.addColor(lights[2], "diffuse").listen();
-    light3Gui.addColor(lights[2], "specular").listen();
-    light3Gui.add(lights[2], "directional").listen();
-    light3Gui.add(lights[2], "active").listen();
-
+        lightGui.addColor(light, "ambient").listen();
+        lightGui.addColor(light, "diffuse").listen();
+        lightGui.addColor(light, "specular").listen();
+        lightGui.add(light, "directional").listen();
+        lightGui.add(light, "active").listen();
+    }
 
     //
     // OBJECTS GUI
@@ -286,7 +265,7 @@ function setup(shaders) {
     let down = false;
     let lastX, lastY;
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.78, 0.78, 0.78, 1.0);
     gl.enable(gl.DEPTH_TEST); // Enables Z-buffer depth test
 
     resizeCanvasToFullWindow();
@@ -375,7 +354,7 @@ function setup(shaders) {
 
     canvas.addEventListener('mouseup', function (event) {
         down = false;
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearColor(0.78, 0.78, 0.78, 1.0);
     });
 
     function saveBack() {
@@ -402,24 +381,28 @@ function setup(shaders) {
                 saveBack();
                 activeObject = "1";
                 transform = { ...object1 } // JSON.parse(JSON.stringify(object1)) // Object.assign({}, object1);
+                activeWireframe = true;
                 break;
             case "2":
                 console.log("Activating object 2")
                 saveBack();
                 activeObject = "2";
                 transform = { ...object2 } // Object.assign({}, object2);
+                activeWireframe = true;
                 break;
             case "3":
                 console.log("Activating object 3")
                 saveBack();
                 activeObject = "3";
                 transform = { ...object3 } // Object.assign({}, object3);
+                activeWireframe = true;
                 break;
             case "4":
                 console.log("Activating object 4")
                 saveBack();
                 activeObject = "4";
                 transform = { ...object4 } // Object.assign({}, object4);
+                activeWireframe = true;
                 break;
         }
         objectsGui.destroy();
@@ -439,38 +422,39 @@ function setup(shaders) {
         gl.viewport(0, 0, canvas.width, canvas.height);
     }
 
-    /*function uploadModelView() {
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
-    }*/
-
     function uploadModelView(material)
     {
         
         gl.useProgram(program);
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
-        
-        let activeLights = 0;
-        
-        for(let i = 0; i < lights.length ;i++){
-            if (!lights[i].active){
+
+        for(let i = 0; i < lights.length; i++) {
+            
+            //this segment of code is done before to potencially deactivate the light in the shader, 
+            //as the shader saves, the light info from frame to frame 
+            const active = gl.getUniformLocation(program, `uLight[${i}].active`);
+            gl.uniform1i(active, lights[i].active ? 1 : 0);
+            
+            if (!lights[i].active) {
                 continue;
             }
 
-            activeLights++;
             const Pos = gl.getUniformLocation(program, `uLight[${i}].pos`);
             const Ia  = gl.getUniformLocation(program, `uLight[${i}].Ia` );
             const Id  = gl.getUniformLocation(program, `uLight[${i}].Id` );
             const Is  = gl.getUniformLocation(program, `uLight[${i}].Is` );
+            //const active = gl.getUniformLocation(program, `uLight[${i}].active` );
 
             let curLightPos = vec4(lights[i].position.x, lights[i].position.y, lights[i].position.z, lights[i].position.w);
             gl.uniform4fv(Pos, curLightPos);
-            gl.uniform3fv(Ia, flatten(vec3(lights[i].ambient.map( function(x) { return x/255 }))));
-            gl.uniform3fv(Id, flatten(vec3(lights[i].diffuse.map( function(x) { return x/255 }))));
-            gl.uniform3fv(Is, flatten(vec3(lights[i].specular.map(function(x) { return x/255 }))));
+            gl.uniform3fv(Ia, flatten(vec3(lights[i].ambient.map(x => x / 255))));
+            gl.uniform3fv(Id, flatten(vec3(lights[i].diffuse.map(x => x / 255))));
+            gl.uniform3fv(Is, flatten(vec3(lights[i].specular.map(x => x / 255))));
+            //gl.uniform1i(active, lights[i].active ? 1 : 0);
         }
         
         const uNLights = gl.getUniformLocation(program, "uNLights");
-        gl.uniform1i(uNLights, activeLights);
+        gl.uniform1i(uNLights, lights.length);
 
         const Ka = gl.getUniformLocation(program, "uMaterial.Ka");
         const Kd = gl.getUniformLocation(program, "uMaterial.Kd");
@@ -517,6 +501,27 @@ function setup(shaders) {
         type.draw(gl, program, gl.TRIANGLES);
     }
 
+
+    function drawWireFrameObject(WIREFRAME_OFFSET = 0.01) {
+        console.log("Drawing wireframe object", transform.name)
+        
+        // Apply transformations
+        multTranslation([transform.position.x, transform.position.y, transform.position.z]);
+        multRotationX(transform.rotation.x);
+        multRotationY(transform.rotation.y);2
+        multRotationZ(transform.rotation.z);
+        multScale([transform.scale.x + WIREFRAME_OFFSET, transform.scale.y + WIREFRAME_OFFSET, transform.scale.z + WIREFRAME_OFFSET]);
+
+        // Upload Model View
+        gl.useProgram(wireframeProgram);
+        gl.uniformMatrix4fv(gl.getUniformLocation(wireframeProgram, "mModelView"), false, flatten(modelView()));
+        gl.uniformMatrix4fv(gl.getUniformLocation(wireframeProgram, "mProjection"), false, flatten(mProjection));
+
+        // Draw
+        const type = fromNameGetType(transform.name);
+        type.draw(gl, wireframeProgram, gl.LINES);
+    }
+
     function fromNameGetType(name) {
         switch (name) {
             case "Bunny":
@@ -544,7 +549,7 @@ function setup(shaders) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         options.depthtest ? gl.enable(gl.DEPTH_TEST) : gl.disable(gl.DEPTH_TEST);       //Enable/disable z-buffer
-        options.backfaceCulling ? gl.enable(gl.CULL_FACE) : gl.disable(gl.CULL_FACE);   //Enable/disable backface culling
+        options.backface_culling ? gl.enable(gl.CULL_FACE) : gl.disable(gl.CULL_FACE);   //Enable/disable backface culling
 
         gl.useProgram(program);
 
@@ -559,6 +564,7 @@ function setup(shaders) {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(modelView())));
 
         gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
+        //gl.clearColor(0.78, 0.78, 0.78, 1.0)
 
         saveBack();
         
@@ -583,10 +589,15 @@ function setup(shaders) {
         /**/drawObject(object4);
         popMatrix();
 
-        // drawObjects(scene);
+        if (activeWireframe) {1
+            pushMatrix();
+            /**/drawWireFrameObject();
+            popMatrix();
+        }
+            // drawObjects(scene);
     }
 }
 
-const urls = ['shader.vert', 'shader.frag'];
+const urls = ['shader.vert', 'shader.frag', 'wireframe.vert', 'wireframe.frag'];
 
 loadShadersFromURLS(urls).then(shaders => setup(shaders));
